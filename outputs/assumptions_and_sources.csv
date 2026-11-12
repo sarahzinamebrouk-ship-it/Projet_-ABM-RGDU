@@ -1,0 +1,36 @@
+﻿Assumption,Type,Justification,Tested for robustness?
+RGDU formula: minimum rate 0.02; size adjustment 0.3781 / 0.3821; zero from 3 minimum wages,Source,Decree no. 2025-887,No
+Legacy relief: 0.3193 / 0.3233; health contribution relief to 2.396 minimum wages; family benefits to 3.354,Source,Tissot (2025); Legisocial and Previssima,No
+"Reference firm sizes: 27 / 553 / 13,321 employees, used for the 50-employee threshold",Source,"Insee, firms by size category, 2023",No
+"Median and 90th-percentile net wages: 2,190 and 4,334 euros",Source,Insee survey no. 2079,No
+Wages by sector are proportional to the sector's average wage,Source and assumption,Insee dataset 2381338,No
+Near-minimum-wage profile set to 1.2 minimum wages,Assumption (value),"DGT guide (2024, pp. 14, 16); CGT document (2018) is a policy claim, not an observed value",Yes (1.1 and 1.3)
+"Wage level proxies qualification: below high school, high school, and post-secondary",Assumption,DGT guide (2024): job classification relates education and minimum pay; simplified by the project,No
+Employee shares by wage level: 39 / 42 / 19 percent,Source and calculation,"Insee survey no. 2132 (2025), figure 3",Yes (alternative sector distributions)
+Economy scaled to one hundredth: one simulated employee represents 100 actual employees,Calculation assumption,Used to keep the model fast; results are multiplied by 100,No
+"Employees are represented as firm-level counts, not individual agents",Acknowledged limitation,Simplification; unemployed people are represented as agents,No
+Unemployment rates by qualification: 14.7 / 9.1 / 5.3 percent,Calibration source,"Insee Reference Series,  2026, unemployment inequalities (2025)",No
+Vacancy rate of 2.3 percent; vacancies are allocated by separation rates,Source and calibration assumption,Dares Focus no. 33 (2024),No
+Sector separation rate based on annual permanent-contract endings divided by four,Source and assumption,Dares 2025 contract endings; Insee employment,No
+About one third of separations lead to unemployment,Calibration to observed data,"Insee Reference Series,  2025: 1.8 percent of employees move to unemployment per quarter",Yes (20 and 50 percent)
+Unemployment-to-inactivity transition: 22.7 percent per quarter,Source,"Insee Reference Series,  2025, labor market transitions (2024)","Yes (0, 10 and 30 percent)"
+Inactivity-to-unemployment transition: 5.8 percent per quarter,Source,"Insee Reference Series,  2025, labor market transitions (2024)",No
+"Initial inactive population balances transitions; total employees, unemployed and inactive people is conserved",Calculation assumption,The inactive population is unavailable for the six sectors; this affects the source of new hires,Yes (inactivity exit rate)
+Employer contributions set to 41 percent of gross wages,Assumption (value),Inspired by Albertini et al. (2025); other references suggest 44 to 47 percent,Yes (44 and 47 percent)
+"Employment elasticity: -0.4 at minimum wage, zero at 2 minimum wages, plus mu = -0.2",Source,"Bozio and Wasmer (2024), p. 194",Yes (-0.2 and -0.6)
+Cobb-Douglas matching function with unemployed-worker exponent 0.5,Source (range 0.5 to 0.7),Petrongolo and Pissarides (2001),Yes (0.7)
+Unemployed agents' hiring weight falls by 45 percent after three quarters,Source,"Kroft, Lange and Notowidigdo (2013)",No
+Long-term unemployment means four quarters or more,Definition,"Insee (one year); used for validation, not calibration",No
+Firms lay off 25 percent of excess employment each quarter,Assumption; form supported by sources,Hamermesh and Pfann (1996); Bentolila and Bertola (1990),"Yes (0, 25 and 100 percent)"
+Recruitment effort can fill vacancies faster but uses resources,Qualitative assumption supported by sources,"Davis, Faberman and Haltiwanger (2013); Gavazza, Mongey and Violante (2018)",No
+Effort increases total labor-market matches according to the average weight of open vacancies,Assumption (form),Inspired by Davis et al. (2013); exact functional form is a project assumption,"Yes (effort advantage 0, 0.25 and 1)"
+Effort advantage 0.5; effort penalty 0.10,Assumptions (values),Not directly supported by a source; tested in sensitivity analysis,Yes
+Firms learn through reinforcement and explore randomly in 10 percent of periods,Form assumption supported by sources,Brenner (2006); Roth and Erev (1995),Yes
+Learning gain 0.10; exploration rate 10 percent,Assumptions (values),Not directly supported by a source,Yes
+Baseline scenario disables learning; alternative scenario enables it,Method choice,Instructor instruction to compare baseline and alternative scenarios,No
+Severe GDP scenario reproduces the observed 2026 shortfall of about 1.3 percent,Source and assumption,"Insee, Rapid Information bulletin no. 263 (30 October 2026)",No
+Central GDP scenario grows by 0.4 percent per quarter,Assumption,Project scenario,No
+Sector demand sensitivity ranges from 0.9 to 1.2,Assumption,Project scenario,No
+Expectations are smoothed using alpha = 0.4,Source,Instructor model parameter EXPECTATION_ADJUSTMENT,No
+Thirty-six firm archetypes: six sectors by six profiles,Assumption,Project design choice,No
+Results report simulation means and 95-percent confidence intervals using common random seeds,Method,Course guidance: account for simulation randomness; use the same seeds across scenarios,No

@@ -1,0 +1,6 @@
+﻿Scenario,Jobs mean (national),Jobs 95% CI lower,Jobs 95% CI upper,Unemployed mean (national),Unemployed 95% CI lower,Unemployed 95% CI upper,Additional gross cost (million euros/year),Gross cost per job (thousand euros),Sensitivity jobs lower bound (national),Sensitivity jobs upper bound (national),Sensitivity sign stable
+RGDU 2026 - legacy,1110,260,1961,-124,-802,555,-389.55,,-808,3932,No
+General reduction of 10%,69121,68296,69946,-14497,-15358,-13636,14038.84,203.11,68420,79472,Yes
+General reduction of 20%,138530,137718,139343,-28529,-29579,-27479,28241.97,203.87,,,Not tested
+General reduction of 40%,275665,274733,276597,-56132,-57337,-54926,57124.91,207.23,275751,314571,Yes
+No exemption - previous scheme,-733752,-734560,-732944,149516,148066,150965,-54438.4,,,,Not tested
