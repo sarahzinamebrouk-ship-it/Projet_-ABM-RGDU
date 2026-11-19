@@ -12,6 +12,10 @@ from parameters import (
 )
 
 
+# This agent combines the firm profile and sector data with qualification and
+# labor-market information used by the model.
+# BLOCK 3 — PART C: FIRM AGENTS.
+# This agent combines sector, wage, and profile data with labor-market qualifications.
 class Firm:
     """A firm agent with size, wage, separations, and recruitment-effort scores."""
 
@@ -20,18 +24,25 @@ class Firm:
         self.sector = sector
         self.size = size
       
+        # Reference firm size determines whether the under-50 relief rate applies.
         self.reference_employee_count = EMPLOYEES_BY_SIZE[size]
       
       
+        # This agent represents its sector's employment share at this wage level,
+        # split equally across the two profiles and reduced to the model scale.
         distribution = distribution or WAGE_LEVEL_DISTRIBUTION
         sector_employment = AVERAGE_EMPLOYMENT_2025_THOUSANDS[sector] * 1000
         self.employee_count = round(MODEL_SCALE * sector_employment * distribution[sector][level] / 2)
         self.qualification = QUALIFICATION_BY_WAGE_LEVEL[level]
         factor = NET_WAGE_BY_SECTOR[sector] / OVERALL_NET_WAGE
       
+        # Assumption: national wage for this level multiplied by the sector-to-overall wage ratio.
         wage_national = NATIONAL_WAGES_IN_MIN_WAGES[level]
         if level == "Near minimum wage" and near_min_wage_value is not None:
+            # Optional alternative for robustness tests.
             wage_national = near_min_wage_value
         self.wage_in_min_wages = max(1.0, wage_national * factor)
+        # Quarterly sector separation rate: annual permanent-contract endings
+        # divided by sector employment and by four.
         self.separation_rate = PERMANENT_CONTRACT_ENDINGS_2025[sector] / (AVERAGE_EMPLOYMENT_2025_THOUSANDS[sector] * 1000) / 4
         self.initial_vacancies = 0.0

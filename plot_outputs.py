@@ -60,7 +60,8 @@ def create_charts(
 
     quarters = range(NUMBER_OF_QUARTERS + 1)
 
-    # Chart 1: RGDU employment effects with and without firm learning.
+    # Chart 1: RGDU minus legacy employment over time. Lines show simulation
+    # means; shaded areas show 95% confidence intervals for the mean.
     plt.figure(figsize=(7, 4))
     for label, result_group in (
         ("Without learning (baseline)", without_learning),
@@ -89,7 +90,7 @@ def create_charts(
             alpha=0.15,
         )
 
-    plt.axhline(0, color="grey", linewidth=0.8)
+    plt.axhline(0, color="grey", linewidth=0.8)  # Zero line: no policy effect.
     plt.xlabel("Quarter")
     plt.ylabel("Jobs: RGDU minus legacy policy")
     plt.title("RGDU employment effect (mean and 95% confidence interval)")
@@ -97,7 +98,8 @@ def create_charts(
     plt.tight_layout()
     save_chart("rgdu_employment_effect.png")
 
-    # Chart 2: employment paths with and without the severe demand shock.
+    # Chart 2: severe demand shock; solid lines include the shock and dashed
+    # lines show the baseline without a shock.
     plt.figure(figsize=(7, 4))
     for policy in ("legacy", "rgdu"):
         shock_path = [
@@ -139,7 +141,7 @@ def create_charts(
     plt.tight_layout()
     save_chart("demand_shock.png")
 
-    # Chart 3: share of firms using intensive recruitment effort.
+    # Chart 3: share of firms using intensive recruitment effort, by firm size.
     plt.figure(figsize=(7, 4))
     for firm_size in ("Small", "Medium", "Large"):
         plt.plot(
@@ -162,7 +164,9 @@ def create_charts(
     plt.tight_layout()
     save_chart("recruitment_learning.png")
 
-    # Chart 4: sensitivity of reform effects to learning settings.
+    # Chart 4: one point per learning setting, with 95% confidence intervals.
+    # Use two panels because the RGDU effect (~1,000 jobs) and 10% general cut
+    # effect (~70,000 jobs) have different scales.
     setting_names = [name for name, _ in learning_settings]
     reforms_to_plot = (
         "RGDU 2026 - legacy",

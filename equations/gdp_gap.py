@@ -2,7 +2,8 @@ from parameters import NUMBER_OF_QUARTERS, EURO_AREA_GDP_GROWTH
 
 
 def gdp_gap(scenario):
-    """gap of the level of the gdp with the scenario central, quarter per quarter (constant after 9 quarters)."""
+    """GDP level gap relative to the central scenario, quarter by quarter (constant after 9 quarters)."""
+    # Hold the final calculated gap constant for the remaining simulation quarters.
     level = level_central = 1.0
     gaps = []
     for growth, central_growth in zip(EURO_AREA_GDP_GROWTH[scenario], EURO_AREA_GDP_GROWTH["central"]):

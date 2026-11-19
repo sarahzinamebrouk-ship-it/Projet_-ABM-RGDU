@@ -29,12 +29,14 @@ from model.scheduler import execute_quarters
 from markets.labor_market import initialize_labor_markets
 from equations.desired_employment_change import desired_employment_change
 
+# BLOCK 3 — PART C: BUILD THE 36 REPRESENTATIVE FIRMS.
 def build_firms(near_min_wage_value=None, distribution=None):
-    """the 36 firms (6 SECTORS x 6 FIRM_PROFILES)."""
+    """Build the 36 representative firms (6 sectors x 6 profiles)."""
     firms = []
     for sector in SECTORS:
         for size, level in FIRM_PROFILES:
             firms.append(Firm(len(firms), sector, size, level, near_min_wage_value, distribution))
+    # Assumption: distribute initial vacancies in proportion to separations.
     for qualification in (0, 1, 2):
         qualified_firms = [e for e in firms if e.qualification == qualification]
         total_vacancies = VACANCY_RATE / (1 - VACANCY_RATE) * sum(e.employee_count for e in qualified_firms)
@@ -44,22 +46,23 @@ def build_firms(near_min_wage_value=None, distribution=None):
     return firms
 
 def create_unemployed_agents(number, arrivals, random_numpy, exit_to_inactivity=0.0):
-  
-  
+    # BLOCK 4 — STEP 7: create initial unemployed agents with individual durations.
+    # Each unemployed agent has a duration. The exit probability combines
+    # hiring (arrivals / stock) and the transition to inactivity, giving a
+    # geometric distribution of initial unemployment durations.
     exit_rate = min(1.0, arrivals / number + exit_to_inactivity) if number else 1.0
     return random_numpy.geometric(exit_rate, size=number) - 1
 
 def select_hired_workers(durations, number, random_numpy):
-  
-  
-  
+    # Select without replacement, favoring recently unemployed workers.
     if number <= 0:
         return np.array([], dtype=int)
     draws = random_numpy.random(len(durations)) ** (1 / chance_hire(durations))
     return np.argpartition(-draws, number - 1)[:number]
 def allocate_hires(vacancies, efforts, matches, advantage, random_numpy):
-    """Model component description."""
-  
+    """Allocate market matches among firm vacancies, weighted by recruitment effort."""
+    # Draw exactly the number of matches from a weighted pool of open vacancies;
+    # no hire is lost or added during allocation.
     firm_for_vacancy = np.repeat(np.arange(len(vacancies)), vacancies)
     weight = np.repeat(1 + advantage * np.array(efforts), vacancies)
     if matches <= 0 or len(weight) == 0:
@@ -94,9 +97,12 @@ def simulate(
     layoff_rate=LAYOFF_RATE,
     exit_to_inactivity=UNEMPLOYMENT_TO_INACTIVITY_RATE,
 ):
-    """Model component description."""
+    """Simulate the labor market, firm decisions, learning, and employment history."""
+    # BLOCK 6 — STEP 3: run a complete simulation for one policy and random seed.
   
   
+    # Separate random streams by use so changing one scenario does not shift
+    # unrelated draws; the same seed therefore supports like-for-like comparisons.
     random_generators = {
         name: random.Random(f"{seed}-{name}")
         for name in ("separations", "rounding", "choice", "inactivity", "layoffs")
@@ -110,6 +116,8 @@ def simulate(
     labor_markets = initialize_labor_markets(
         firms, share_unemployment, exponent
     )
+    # Each unemployed person is an agent represented by unemployment duration,
+    # stored separately for each qualification.
     durations = {
         qualification: create_unemployed_agents(
             labor_markets[qualification]["unemployed"],
@@ -125,6 +133,7 @@ def simulate(
     }
     employment = [e.employee_count for e in firms]
   
+    # Initial inactive population balances transitions: 0.058 x inactive = exits x unemployed.
     inactive_people = {
         qualification: round(
             exit_to_inactivity
@@ -135,6 +144,7 @@ def simulate(
     }
 
   
+    # Desired employment changes once at the start due to the contribution-cost change.
     employment_desired = [
         e.employee_count
         * (1 + desired_employment_change(policy, e.wage_in_min_wages, e.reference_employee_count,

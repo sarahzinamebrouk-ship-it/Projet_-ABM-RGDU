@@ -1,3 +1,14 @@
+"""Run the ABM and its analyses (approximately seven minutes at 200 repetitions).
+
+Research question: what is the effect of reducing employer contributions on
+employment and unemployment? Application: the 2026 RGDU reform.
+The results are simulations, not a causal estimate of the real-world RGDU effect.
+The model represents one hundredth of the economy; national results are scaled
+up by 100. Read reported values as mean [95% confidence interval for the mean].
+An interval excluding zero means the effect is distinguishable from simulation
+randomness; it does not prove that the effect is true in reality.
+"""
+
 import csv
 import statistics
 
@@ -25,7 +36,7 @@ from plot_outputs import create_charts
 from excel_outputs import write_workbook
 
 
-### Simulation and impact analysis
+# BLOCKS 1–3: BASELINE MICRO AND NATIONAL IMPACT CALCULATIONS.
 
 ### Step 1: Baseline micro-level simulation with 36 representative firms
 
@@ -84,8 +95,8 @@ def simulate_macro_impact():
             firm_temp = [f for f in firms if f.sector == sector and f.size == size and f.qualification == QUALIFICATION_BY_WAGE_LEVEL[level]][0]
             wage_in_min_wage = firm_temp.wage_in_min_wages
 
+            # Assumption: two firm profiles per wage level, with equal shares.
             profile_share = WAGE_LEVEL_DISTRIBUTION[sector][level] / 2.0
-            # ASSUMPTION: two profiles per wage level, with equal shares
 
             profile_employees = sector_employment * profile_share
 
@@ -109,7 +120,8 @@ def simulate_macro_impact():
     )
 
 
-# Simulation settings
+# Simulation settings. Use common random seeds so scenario comparisons are not
+# driven by different random draws.
 
 NUM_REPETITIONS = 200
 # ASSUMPTION: 200 simulations per scenario (to calculate a mean and confidence interval)
@@ -117,7 +129,7 @@ NUM_REPETITIONS = 200
 SEED = 2026
 
 
-### Step 4: Run multiple simulations with common random seeds
+### Run repeated simulations with common random seeds
 
 def run_simulations(firms, count, scheme, **options):
     """Run multiple simulations using the same random seeds across all scenarios."""
@@ -127,7 +139,7 @@ def run_simulations(firms, count, scheme, **options):
     ]
 
 
-### Step 1: Preparation
+# BLOCK 7: EXPERIMENTS AND RESULTS — STEP 1: PREPARATION.
 
 SCHEME_NAMES = {
     "none": "No exemption",
@@ -135,8 +147,8 @@ SCHEME_NAMES = {
     "rgdu": "RGDU 2026",
 }
 
+# One simulated employee represents 100 actual employees.
 NATIONAL = 1 / MODEL_SCALE
-# One model employee represents 100 actual employees
 
 NUM_REPETITIONS_ROBUSTNESS = 60
 # Simulations per robustness test (section F)
@@ -211,7 +223,7 @@ def intensive_effort_share(simulations, quarter, size=None):
 
 
 def state_cost(simulation, scheme, contribution_reduction=0.0):
-    """Annual uncollected contributions, in millions of euros."""
+    """Annual gross partial cost in uncollected contributions (no taxes or benefits), millions of euros."""
 
     total = 0.0
 
@@ -250,8 +262,8 @@ print(
 
 print("   Mean [95% confidence interval for the mean]")
 
-# Each scheme is simulated using the same random seeds.
-# Differences therefore do not come from random variation.
+# Each scheme uses the same random seeds; differences therefore do not come
+# from random variation alone.
 
 results = {
     s: run_simulations(
@@ -335,7 +347,7 @@ print(
     "(starting from the previous scheme, baseline without learning, T60, national level)"
 )
 
-# We reduce the remaining employer contributions by 10%, 20% or 40% for all wages.
+# Reduce the remaining employer contributions by 10%, 20% or 40% for all wages.
 
 reductions = {}
 
@@ -487,7 +499,7 @@ print(
     "they are tested in section G)"
 )
 
-# We change ONE parameter at a time and examine whether the RGDU effect changes significantly.
+# Change ONE parameter at a time and examine whether the RGDU effect changes substantially.
 
 tests = [("central", {}, {})]
 
@@ -549,7 +561,8 @@ for test_name, sim_options, firm_options in tests:
     )
 
 
-# Contribution rate: change the constant and then restore its original value.
+# The contribution rate is a module constant: change it for the sensitivity runs,
+# then restore its original value.
 
 initial_contribution_rate = CONTRIBUTION_RATE
 
@@ -625,8 +638,8 @@ print(
     f"(jobs at T60, {NUM_REPETITIONS_SENSITIVITY} simulations per row, national level)"
 )
 
-# A "parameter setting" = (name, simulation options).
-# Each reform is compared with the previous scheme using THE SAME SETTINGS.
+# A "parameter setting" is (name, simulation options). Compare each reform
+# with the previous scheme using THE SAME SETTINGS.
 
 parameter_settings = [
     ("learning disabled (baseline)", {"learning": False}),
@@ -670,7 +683,7 @@ sensitivity = {
     for reform_name, _ in reforms
 }
 
-# Reform -> parameter setting -> list of employment differences
+# Reform -> parameter setting -> list of employment differences.
 
 print(
     f"  {'parameter setting':32s}"
@@ -734,7 +747,7 @@ print(
 
 final_table_rows = []
 
-# (name, simulations, general reduction, scheme, name in section H or None if not tested)
+# (name, simulations, general reduction, scheme, section H name or None if untested)
 
 table_scenarios = [
     (
@@ -800,7 +813,7 @@ for scenario_name, simulations, contribution_reduction, policy, sensitivity_name
 
     national_jobs_created = jobs_mean * NATIONAL
 
-    # Gross cost per job: only if the reform costs money AND creates jobs.
+    # Gross cost per job is relevant only if the reform costs money and creates jobs.
 
     cost_per_job_k_euros = (
         cost_difference * 1e6 / national_jobs_created / 1000

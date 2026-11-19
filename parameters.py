@@ -1,16 +1,25 @@
+# BLOCK 1 — CONTRIBUTION-RELIEF SCHEMES: rates and thresholds.
 T_MIN = 0.02
 T_DELTA_UNDER_50 = 0.3781
 T_DELTA_50_AND_OVER = 0.3821
 LEGACY_T_UNDER_50 = 0.3193
 LEGACY_T_50_AND_OVER = 0.3233
 
+# Reduced rates under the previous scheme (sources: Legisocial, Previssima,
+# Editions Tissot). Health contributions: 13% -> 7% (6 points); family
+# allowances: 5.25% -> 3.45% (1.8 points). Legal thresholds of 2.5 and 3.5
+# minimum wages use the minimum wage frozen on 31 December 2023 (€11.52/hour).
+# On 1 January 2026, these equal 2.396 and 3.354 minimum wages.
 LEGACY_HEALTH_THRESHOLD_IN_MIN_WAGES = 2.396
 LEGACY_FAMILY_ALLOWANCE_THRESHOLD_IN_MIN_WAGES = 3.354
 
+# BLOCK 2 — EMPLOYMENT RESPONSE TO LABOR COST: contribution rate and elasticities.
 CONTRIBUTION_RATE = 0.41
 ELASTICITY_AT_MIN_WAGE = -0.4
 MU = -0.2
 
+# BLOCK 3 — THE 36 FIRMS: six sectors, six profiles, and representative data.
+# Step 1 — The six sectors.
 SECTORS = [
     "Accommodation and food services",
     "Trade",
@@ -20,6 +29,7 @@ SECTORS = [
     "Construction",
 ]
 
+# Step 2 — The six firm profiles.
 FIRM_PROFILES = [
     ("Small", "Near minimum wage"),
     ("Medium", "Intermediate"),
@@ -30,20 +40,31 @@ FIRM_PROFILES = [
 ]
 WAGE_LEVELS = ["Near minimum wage", "Intermediate", "High"]
 
+# The model represents one employee out of every 100; national results are
+# multiplied by 100.
 MODEL_SCALE = 0.01
 
+# Step 3 — Employees by firm size; reference counts determine the under-50 rate.
 EMPLOYEES_BY_SIZE = {"Small": 27, "Medium": 553, "Large": 13321}
 
+# Step 4 — Wages are gross because the RGDU is calculated on gross pay. Source: Insee
+# Première no. 2079 (mean net wage €2,733; mean gross wage €3,602). Assumption:
+# the net-to-gross ratio is the same at every wage level.
 NET_TO_GROSS_RATIO = 2733 / 3602
+# January 2024 gross minimum wage: €11.65/hour x 151.67 hours per month.
 GROSS_MIN_WAGE_JANUARY_2024 = 11.65 * 151.67
+# Gross minimum wage since 1 June 2026; used only to display euro amounts.
 GROSS_MIN_WAGE_2026 = 1867.02
 
+# Source: Insee Première no. 2079 (median net wage €2,190; 90th percentile
+# net wage €4,334). Assumption: "Near minimum wage" means 1.2 gross minimum wages.
 NATIONAL_WAGES_IN_MIN_WAGES = {
     "Near minimum wage": 1.2,
     "Intermediate": 2190 / NET_TO_GROSS_RATIO / GROSS_MIN_WAGE_JANUARY_2024,
     "High": 4334 / NET_TO_GROSS_RATIO / GROSS_MIN_WAGE_JANUARY_2024,
 }
 
+# Step 5 — Source: Insee, mean net wages by sector, private sector, 2023 (dataset 2381338).
 NET_WAGE_BY_SECTOR = {
     "Accommodation and food services": 1980,
     "Trade": 2530,
@@ -99,6 +120,8 @@ NET_WAGE_BY_SECTOR = {
 }
 OVERALL_NET_WAGE = 2730
 
+# Step 6 — Source: Insee, average salaried employment in 2025, thousands; these sector
+# totals replace macro weights when aggregating simulated changes nationally.
 AVERAGE_EMPLOYMENT_2025_THOUSANDS = {
     "Accommodation and food services": 1308.0,
     "Trade": 3373.1,
@@ -108,7 +131,15 @@ AVERAGE_EMPLOYMENT_2025_THOUSANDS = {
     "Construction": 1539.7,
 }
 TOTAL_BASE_EMPLOYMENT = sum(AVERAGE_EMPLOYMENT_2025_THOUSANDS.values()) * 1000
+# Step 7 — Source: Insee Première no. 2132 (2025), figure 3: monthly net wage
+# distribution in full-time equivalents (100-euro bands; private sector,
+# 18.5 million FTE). The group converts the bands into minimum-wage multiples
+# and splits them halfway between the three wage levels (1.41 and 2.43).
+# Limitations: this covers the whole private sector, not only the six sectors;
+# FTEs below one minimum wage (apprentices and interns, 6%) count as near minimum wage.
 NATIONAL_WAGE_LEVEL_SHARES = {"Near minimum wage": 0.39, "Intermediate": 0.42, "High": 0.19}
+# Assumption: the same wage-level distribution applies to every sector; sector
+# wages are accounted for separately. Alternative, unsourced distribution for robustness.
 WAGE_LEVEL_DISTRIBUTION = {sector: NATIONAL_WAGE_LEVEL_SHARES for sector in SECTORS}
 
 TEST_WAGE_LEVEL_DISTRIBUTION = {
@@ -122,8 +153,13 @@ TEST_WAGE_LEVEL_DISTRIBUTION = {
 
 
 
+# BLOCK 4 — THE LABOR MARKET AND UNEMPLOYED AGENTS.
+# Assumption: wage level proxies qualification (0 = below high school,
+# 1 = high school, 2 = post-secondary).
 QUALIFICATION_BY_WAGE_LEVEL = {"Near minimum wage": 0, "Intermediate": 1, "High": 2}
+# Source: Dares Focus no. 33 (May 2024), vacancy rate.
 VACANCY_RATE = 0.023
+# Source: Dares, permanent-contract endings in 2025.
 PERMANENT_CONTRACT_ENDINGS_2025 = {
     "Accommodation and food services": 616776,
     "Trade": 797573,
@@ -133,35 +169,66 @@ PERMANENT_CONTRACT_ENDINGS_2025 = {
     "Construction": 334814,
 }
 
+# Source: Insee Références, "Inequalities in unemployment" (July 2026), 2025
+# unemployment rates: no diploma or certificate 14.7%; high school 9.1%;
+# two or more years of post-secondary education 5.3%. Level 0 uses the no-diploma
+# rate; CAP-BEP vocational qualifications (7.6%) are not modeled separately.
 UNEMPLOYMENT_RATE_BY_QUALIFICATION = {0: 0.147, 1: 0.091, 2: 0.053}
 
+# Source: Insee Références, "Labor-market transitions" (June 2025): 1.8% of
+# employed people move into unemployment in a quarter (2024, ages 15-64).
 EMPLOYMENT_TO_UNEMPLOYMENT_RATE_PER_QUARTER = 0.018
+# Dares contract endings and Insee employment imply an average quarterly
+# separation rate of about 5.5%. Calibrate the share of separations reaching
+# unemployment to reproduce the observed 1.8% flow; about one third are
+# replaced immediately through job-to-job moves.
 AVERAGE_SEPARATION_RATE_PER_QUARTER =(
     sum(PERMANENT_CONTRACT_ENDINGS_2025.values()) / (sum(AVERAGE_EMPLOYMENT_2025_THOUSANDS.values()) * 1000) / 4)
 
 SEPARATIONS_TO_UNEMPLOYMENT_SHARE = EMPLOYMENT_TO_UNEMPLOYMENT_RATE_PER_QUARTER / AVERAGE_SEPARATION_RATE_PER_QUARTER
 
+# Source: Insee Références, labor-market transitions (June 2025), quarterly
+# 2024 rates: unemployment -> employment 27.0%; unemployment -> inactivity
+# 22.7%; inactivity -> unemployment 5.8%; employment -> unemployment 1.8%.
 UNEMPLOYMENT_TO_INACTIVITY_RATE = 0.227
 INACTIVITY_TO_UNEMPLOYMENT_RATE = 0.058
 
+# Matching-function form from Petrongolo and Pissarides (2001): hiring
+# elasticity with respect to unemployment is 0.5-0.7, with constant returns.
+# Assumption: use the lower bound, 0.5, and test 0.7 for robustness.
 UNEMPLOYED_EXPONENT = 0.5
 
+# Source: Kroft, Lange and Notowidigdo (2013, QJE 128(3)): after 8 months of
+# unemployment, interview callbacks are about 45% lower than after one month
+# (7% to 4%), then the decline stops. Eight months is about three quarters;
+# a recent unemployed worker has weight 1, falling to 0.55 after three quarters.
 HIRING_CHANCE_DECLINE_QUARTERS = 3
 HIRING_CHANCE_DECLINE = 0.45
+# Long-term unemployment means four or more quarters (Insee definition: one year).
 LONG_TERM_UNEMPLOYMENT_QUARTERS = 4
+# Comparison only; not used in the calculations. Source: Insee, 2025 Labour
+# Force Survey: 566,000 long-term unemployed out of 2,451,000 (23.1%).
 LONG_TERM_UNEMPLOYMENT_SHARE = 566 / 2451
 
 
 
 
+# BLOCK 5 — FIRM BEHAVIOR: DEMAND SHOCKS AND LEARNING PARAMETERS.
+# Step 1 — Demand shocks. Observed source: Insee, Rapid Information no. 263 (30 October 2026): French
+# GDP growth of -0.2% (Q1), 0.0% (Q2), and -0.1% (Q3) in 2026, about 1.3%
+# below the central scenario. Assumption: central growth is 0.4% per quarter;
+# favorable and unfavorable paths are project scenarios. "Severe" reproduces
+# the observed 2026 shortfall (final gap -1.29%); paths are simplified by the group.
 EURO_AREA_GDP_GROWTH = {
     "central": [0.4, 0.3, 0.3, 0.4, 0.4, 0.4, 0.4, 0.4, 0.3],
     "favorable": [0.4, 0.3, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.3],
     "Unfavorable": [0.2, 0.2, 0.3, 0.3, 0.3, 0.4, 0.4, 0.4, 0.4],
     "severe": [-0.2, 0.0, 0.1, 0.2, 0.3, 0.4, 0.4, 0.4, 0.4],
 }
+# Source: instructor's model parameter EXPECTATION_ADJUSTMENT = 0.40.
 ALPHA = 0.40
 
+# Step 2 — Demand response: assumed sector demand sensitivities (values above 1 mean more sensitive than average).
 SECTOR_SENSITIVITY = {
     "Accommodation and food services": 1.20,
     "Trade": 1.10,
@@ -170,15 +237,25 @@ SECTOR_SENSITIVITY = {
     "Transportation and warehousing": 0.95,
     "Construction": 1.15,
 }
+# Assumption: desired employment follows expected demand with elasticity 1.0.
 EMPLOYMENT_DEMAND_ELASTICITY = 1.0
 
+# Step 3 — Recruitment-effort learning. Recruitment effort per vacancy can speed up filling vacancies while using
+# resources (Davis, Faberman and Haltiwanger, 2013; Gavazza, Mongey and
+# Violante, 2018). Firms learn by reinforcement (Brenner, 2006; Roth and Erev,
+# 1995). The numerical values below are unsourced assumptions tested in sensitivity analysis.
 EFFORT_ADVANTAGE = 0.5
 EFFORT_PENALTY = 0.10
 LEARNING_GAIN = 0.10
 EXPLORATION = 0.10
 
 
+# BLOCK 6 — SIMULATION LOOP: time, random draws, and layoffs.
+# Assumption: each period is one quarter, matching the Insee and Dares flows.
 NUMBER_OF_QUARTERS = 60
+# Assumption: each quarter, a firm lays off 25% of excess employment (tested
+# at 0% and 100%). Form motivated by employment adjustment costs (Hamermesh
+# and Pfann, 1996; Bentolila and Bertola, 1990).
 LAYOFF_RATE = 0.25
 
 

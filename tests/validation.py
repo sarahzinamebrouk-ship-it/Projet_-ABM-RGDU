@@ -46,6 +46,12 @@ from equations.matching_function import number_of_matches
 from markets.labor_market import allocate_hires
 
 
+# BLOCK 8 — VERIFICATION AND VALIDATION (RUN BEFORE THE EXPERIMENTS).
+# This verification and validation block runs before the experiments.
+# Code checks test formulas, conservation, randomness, and scenarios; any
+# failure stops execution. Calibration recovers values set by the model and
+# is not independent validation. Validation compares outcomes not supplied to
+# the model. Robustness analyses are run later in run.py (sections F and H).
 VALIDATION_SEED = 2026
 
 
@@ -80,6 +86,9 @@ def _is_rejected(policy_name):
     return False
 
 def check_model():
+    # Code checks stop execution on failure. Calibration recovers values set
+    # by the model and is not independent validation; validation compares
+    # outcomes the model was not given. Robustness tests are reported in run.py.
     print("CODE CHECKS (execution stops if a check fails)")
     firms = build_firms()
     separating_employees = sum(e.employee_count for e in firms)
@@ -88,6 +97,7 @@ def check_model():
     legacy_without_learning = run(firms, 5, "legacy", learning=False)
 
   
+    # 1. Formula checks: relief rates, elasticity, policy choice, and rounding.
     check('RGDU relief is zero from 3 minimum wages onward', rgdu_relief_rate(3.0, 100) == 0.0)
     check('RGDU relief at the minimum wage equals 0.02 plus the size adjustment (0.3781 below 50 employees, 0.3821 otherwise)',
              abs(rgdu_relief_rate(1.0, 20) - 0.3981) < 1e-9 and abs(rgdu_relief_rate(1.0, 100) - 0.4021) < 1e-9)
@@ -104,6 +114,8 @@ def check_model():
     check('Stochastic rounding is unbiased (the mean of 3.78 remains close to 3.78)', abs(sum(draws) / len(draws) - 3.78) < 0.02)
 
   
+    # 2. Learning checks: effort choice, scores, reinforcement, and the
+    # difference between simulations with learning enabled and disabled.
     check('Without exploration, the firm chooses the effort with the highest score (ties select standard effort)',             choose_effort([0.0, 0.3], 0.9) == 1 and choose_effort([0.0, -0.1], 0.9) == 0 and choose_effort([0.2, 0.2], 0.9) == 0)
     check('The effort score is zero when the firm performs like the market and equals the negative penalty under intensive effort',
              abs(effort_score(5, 10, 0.5, 0)) < 1e-9 and abs(effort_score(5, 10, 0.5, 1, 0.1) + 0.1) < 1e-9)
@@ -115,6 +127,8 @@ def check_model():
              sum(e for t in rgdu[0]["efforts"] for e in t if e is not None) > 0)
     
   
+    # 3. Matching checks: verify exact market totals, vacancy caps, and that
+    # effort can affect both hire allocation and overall match efficiency.
     random_test = np.random.default_rng(3)
     vacancies_test, efforts_test = [5, 0, 12, 3], [1, 0, 0, 1]
     allocations = [allocate_hires(vacancies_test, efforts_test, matches, 0.5, random_test)
@@ -131,6 +145,8 @@ def check_model():
              number_of_matches(5.0, 10, 40, efficiency=2.0) <= 10 and number_of_matches(5.0, 40, 10, efficiency=2.0) <= 10)
     check('With the same random seed, effort learning increases total employment (effort affects the market, not only allocation)',
              sum(sum(s["employment"][NUMBER_OF_QUARTERS]) for s in legacy) > sum(sum(s["employment"][NUMBER_OF_QUARTERS]) for s in legacy_without_learning))
+    # 4. Firm and model-scale checks: representative firms, wage floor,
+    # employment scale, wage shares, reference size, and initial vacancies.
     check('The model contains 36 firms', len(firms) == 36)
     check('No wage falls below the minimum wage', all(e.wage_in_min_wages >= 1.0 for e in firms))
     check('The model uses a 1/100 scale: simulated employees times 100 match employment in the six sectors within 1 percent',           abs(separating_employees / MODEL_SCALE / TOTAL_BASE_EMPLOYMENT - 1) < 0.01)
@@ -142,6 +158,8 @@ def check_model():
              abs(sum(e.initial_vacancies for e in firms) - VACANCY_RATE / (1 - VACANCY_RATE) * separating_employees) < 1e-6)
 
   
+    # 5. Unemployed agents and inactivity: duration-based hiring chances,
+    # population conservation, and transitions into and out of inactivity.
     check('A recently unemployed worker has weight 1; after 3 quarters it falls to 0.55 and then remains there',             abs(hiring_chances(np.array([0]))[0] - 1) < 1e-9
              and abs(hiring_chances(np.array([3]))[0] - 0.55) < 1e-9
              and abs(hiring_chances(np.array([10]))[0] - 0.55) < 1e-9)
@@ -165,6 +183,8 @@ def check_model():
              all(0 <= h <= p for s in rgdu for hs, ps in zip(s["hires"], s["vacancies"]) for h, p in zip(hs, ps)))
 
   
+    # 6. Scenario checks: simulation length, reproducibility, baseline
+    # stability, policy differences, demand shocks, and layoffs.
     check('The model runs for 60 quarters (61 values including the initial period)', len(legacy[0]["employment"]) == NUMBER_OF_QUARTERS + 1)
     check('The same random seed produces the same result', simulate(firms, "rgdu", 7) == simulate(firms, "rgdu", 7))
     check('Without reform or learning, employment remains stable (less than a 0.3 percent change after 15 years)',
@@ -186,6 +206,8 @@ def check_model():
   
   
   
+    # 7. Internal transmission check: ensure a contribution-cost change reaches
+    # observed employment, accounting for gradual adjustment in the model.
     reference = run(firms, 20, "legacy", learning=False)
     cut = run(firms, 20, "legacy", learning=False, contribution_cut=0.10)
     additional_desired_employment = sum(
@@ -209,6 +231,8 @@ def validate_model():
         unemployed = initialize_labor_markets(firms, SEPARATIONS_TO_UNEMPLOYMENT_SHARE)[qualification]["unemployed"]
         print(f"  Initial unemployment rate, qualification {qualification}: model {unemployed / (unemployed + employees):.1%}; Insee {UNEMPLOYMENT_RATE_BY_QUALIFICATION[qualification]:.1%}")
   
+    # Employment-to-unemployment flow = change in unemployment + hires + exits
+    # to inactivity - entries from inactivity.
     rate = []
     for s in without_learning:
         for t in range(1, NUMBER_OF_QUARTERS + 1):
@@ -219,11 +243,13 @@ def validate_model():
 
     print("\nINDEPENDENT VALIDATION (values not provided to the model)")
   
+    # V1. Long-term unemployment share; no parameter is calibrated to this value.
     long_term_share = statistics.mean(s["long_term_unemployment"][t] for s in without_learning for t in range(20, NUMBER_OF_QUARTERS))
     gap = long_term_share - LONG_TERM_UNEMPLOYMENT_SHARE
     print(f"  1. Long-term unemployment share: model {long_term_share:.1%}; Insee 2025 {LONG_TERM_UNEMPLOYMENT_SHARE:.1%}"
           f"   -> {'close' if abs(gap) < 0.05 else 'DEVIATION: model limitation'} (difference: {gap * 100:+.1f} percentage points)")
   
+    # V2. Vacancy rate after simulation.
     vacancy_without = statistics.mean(
         vacancy_rate(s, t)
         for s in without_learning
@@ -238,9 +264,12 @@ def validate_model():
     print("     (The vacancy rate is calibrated to 2.3 percent; staying near that value indicates model stability. With learning, firms fill more vacancies:")
     print("      this reflects the effort advantage, an unsupported assumption tested in section H.)")
   
+    # V3. Job-finding chances.
     job_finding_rate = statistics.mean(sum(s["hires"][t - 1]) / s["unemployed"][t - 1] for s in without_learning for t in range(21, NUMBER_OF_QUARTERS + 1))
     print(f"  3. Quarterly job-finding rate: model {job_finding_rate:.0%}; Insee 2024: 27.0 percent; limitation: the model hires too slowly")
   
+    # V4. After a demand shock, more unemployment should coincide with fewer
+    # vacancies (Beveridge-curve direction). Any deviation is a model limitation.
     print("  4. Employment dynamics after a demand shock (difference from the same scenario without a shock; 30 simulations; first 10 years):")
     for scenario_name, gap_gdp in (("shock severe (-1,3 % of gdp)", gdp_gap("severe")), ("sharp decline of 10 %", [-0.10] * NUMBER_OF_QUARTERS)):
         shock = run(firms, 30, "legacy", gap_gdp=gap_gdp)

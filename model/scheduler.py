@@ -12,7 +12,7 @@ from equations.effort_score import effort_score
 from model.collector import record_period
 
 
-
+# BLOCK 6 — QUARTERLY SIMULATION LOOP.
 def execute_quarters(
     firms, labor_markets, durations, inactive_people, employment, employment_desired,
     expectations, scores, history, random, separation_rng, random_exits,
@@ -21,15 +21,19 @@ def execute_quarters(
     advantage, penalty, LEARNING_GAIN, exploration, exponent,
 ):
 
-  
-  
-  
+    # Firm behavior in four parts: OBSERVE demand and hiring outcomes; DECIDE
+    # vacancies and recruitment effort; FACE constraints from excess employment
+    # and the available unemployed pool; LEARN by updating the used effort score.
+    # In course terms: exploration provides variation, the highest score drives
+    # selection, and the score's history provides retention.
+    # Quarterly order follows cause and effect: separations, expectations,
+    # layoffs, vacancies, effort choice, matching, learning, and recording.
+    # Firms cannot open vacancies before separations and layoffs are known,
+    # or learn before hires have been made.
 
     for quarter in range(1, NUMBER_OF_QUARTERS + 1):
 
-      
-      
-      
+        # Unemployed agents age by one quarter.
 
         for qualification in (0, 1, 2):
             durations[qualification] = durations[qualification] + 1
@@ -43,6 +47,8 @@ def execute_quarters(
       
       
 
+        # Inactive people are a fourth stock. 22.7% of unemployed people exit;
+        # 5.8% of the inactive stock at quarter start returns to unemployment.
         exits, entries = 0, 0
 
         for qualification in (0, 1, 2):
@@ -59,6 +65,8 @@ def execute_quarters(
           
           
 
+            # Returning inactive people are drawn from the start-of-quarter stock,
+            # before adding people who just became inactive.
             new_entrants = min(
                 stochastic_round(
                     INACTIVITY_TO_UNEMPLOYMENT_RATE * inactive_people[qualification],
@@ -83,6 +91,8 @@ def execute_quarters(
       
       
 
+        # Separations: some employees enter unemployment (about one third); the
+        # remainder move directly to another job and are replaced immediately.
         for i, e in enumerate(firms):
 
             separating_workers = int(separation_rng.binomial(employment[i], e.separation_rate))
@@ -98,6 +108,7 @@ def execute_quarters(
 
       
 
+        # Firms observe the previous quarter's GDP gap, if a shock path is supplied.
         previous_gdp_gap = (
             0.0
             if gap_gdp is None or quarter == 1
@@ -119,6 +130,8 @@ def execute_quarters(
       
       
 
+        # Lay off a share of excess employment relative to desired employment,
+        # including the firm's usual initial vacancies in its target.
         quarterly_layoffs = 0
 
         for i, e in enumerate(firms):
@@ -151,6 +164,7 @@ def execute_quarters(
 
         for qualification in (0, 1, 2):
 
+            # Newly unemployed workers from separations and layoffs enter with duration 0.
             durations[qualification] = np.concatenate([
                 durations[qualification],
                 np.zeros(arrivals[qualification], dtype=int)
@@ -160,6 +174,8 @@ def execute_quarters(
       
       
 
+        # Open desired employment x expected demand + initial vacancies - current
+        # employment. A negative result means the firm opens no vacancies.
         vacancies = [
             stochastic_round(
                 max(
@@ -180,6 +196,8 @@ def execute_quarters(
       
       
 
+        # Every firm receives a random draw each quarter, even without vacancies,
+        # so scenario comparisons keep aligned random streams.
         effort_draws = [
             random["choice"].random()
             for _ in firms
@@ -222,6 +240,8 @@ def execute_quarters(
 
           
 
+            # Recruitment effort raises market efficiency through the average
+            # weight of open vacancies (efficiency is 1 if no firm uses effort).
             vacancy_weights = [
                 1 + advantage * efforts[i]
                 for i in firm_indices
@@ -237,6 +257,7 @@ def execute_quarters(
 
           
 
+            # Unemployed workers and vacancies meet in qualification-specific markets.
             matches = number_of_matches(
                 labor_markets[qualification]["m0"],
                 len(durations[qualification]),
@@ -247,6 +268,7 @@ def execute_quarters(
 
           
 
+            # Allocate hires among firms, then update the score for the effort used.
             hires_q = allocate_hires(
                 vacancies_q,
                 [efforts[i] for i in firm_indices],
@@ -291,6 +313,7 @@ def execute_quarters(
           
           
 
+            # Hire workers one by one with higher odds for more recent unemployment.
             hires_choisis = select_hired_workers(
                 durations[qualification],
                 sum(hires_q),
@@ -302,6 +325,7 @@ def execute_quarters(
                 hires_choisis
             )
 
+        # Record the outcomes of this quarter.
         history = record_period(
             history,
             employment,

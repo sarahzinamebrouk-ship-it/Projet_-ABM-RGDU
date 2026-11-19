@@ -6,15 +6,19 @@ from parameters import (
 )
 
 
+# BLOCK 1 — Step 3: calculate relief under the previous scheme.
 def legacy_relief(wage_in_min_wages, employee_count):
     """Total legacy-policy relief rate by wage and reference firm size."""
     rate = LEGACY_T_UNDER_50 if employee_count < 50 else LEGACY_T_50_AND_OVER
+    # The general reduction applies only below 1.6 minimum wages.
     relief_generale = (
         rate / 0.6 * (1.6 / wage_in_min_wages - 1)
         if 0 < wage_in_min_wages < 1.6
         else 0.0
     )
+    # Reduced health contributions add 6 percentage points below their threshold.
     maladie = 0.06 if wage_in_min_wages <= LEGACY_HEALTH_THRESHOLD_IN_MIN_WAGES else 0.0
+    # Reduced family-allowance contributions add 1.8 percentage points below their threshold.
     allocations_familiales = (
         0.018 if wage_in_min_wages <= LEGACY_FAMILY_ALLOWANCE_THRESHOLD_IN_MIN_WAGES else 0.0
     )
